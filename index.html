@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoomRevive: redesign any room from a photo</title>
+<meta name="description" content="Upload a room photo, pick a style, and compare the AI redesign side by side.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --limewash: #ECEFEA;
+    --paper: #F7F8F5;
+    --ink: #1C2B2D;
+    --muted: #566668;
+    --teal: #2C5F63;
+    --teal-dark: #224A4D;
+    --brass: #B4862F;
+    --line: #C9CFC8;
+    --danger: #8F2D2D;
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--limewash);
+    color: var(--ink);
+    font: 400 16px/1.5 var(--body);
+  }
+  .app { max-width: 1180px; margin: 0 auto; padding: 20px 20px 40px; }
+
+  header { padding: 4px 0 20px; }
+  .brand { font: 700 28px/1.1 var(--display); letter-spacing: -0.02em; margin: 0; }
+  .tagline { margin: 6px 0 0; color: var(--muted); max-width: 46ch; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  @media (min-width: 900px) {
+    .layout { grid-template-columns: minmax(0, 1fr) 380px; gap: 0; }
+    .stage-wrap { padding-right: 36px; }
+    .controls { border-left: 1px solid var(--line); padding-left: 36px; }
+  }
+
+  /* Stage: empty drop area, then the photo, then the before/after comparison */
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--ratio, 4 / 3);
+    max-height: 78vh;
+    background: #DDE2DB;
+    border-radius: 4px;
+    overflow: hidden;
+    touch-action: pan-y;
+    --pos: 50%;
+  }
+  .stage img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: none;
+    user-select: none; -webkit-user-drag: none;
+  }
+  .stage.has-photo #before { display: block; }
+  .stage.compare #after { display: block; clip-path: inset(0 0 0 var(--pos)); }
+
+  .drop {
+    position: absolute; inset: 0;
+    display: grid; place-content: center; justify-items: center; gap: 10px;
+    padding: 24px; text-align: center; cursor: pointer;
+    border: 1.5px solid var(--line);
+    border-radius: 4px;
+    color: var(--ink);
+  }
+  .drop:hover, .drop.over { background: rgba(255, 255, 255, 0.45); border-color: var(--teal); }
+  .drop:focus-within { outline: 3px solid var(--brass); outline-offset: -3px; }
+  .drop svg { width: 88px; height: 88px; stroke: var(--teal); }
+  .drop strong { font: 500 22px/1.2 var(--display); }
+  .drop span { color: var(--muted); font-size: 14px; }
+  .stage.has-photo .drop { display: none; }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .slider { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; display: none; }
+  .handle { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: #fff; display: none; pointer-events: none; box-shadow: 0 0 0 1px rgba(28, 43, 45, 0.25); }
+  .handle::after {
+    content: "\2194";
+    position: absolute; top: 50%; left: 50%;
+    width: 44px; height: 44px; margin: -22px 0 0 -22px;
+    display: grid; place-items: center;
+    background: var(--brass); color: #fff; font-size: 20px; border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(28, 43, 45, 0.35);
+  }
+  .slider:focus-visible + .handle::after { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .stage.compare .slider, .stage.compare .handle { display: block; }
+
+  .tag {
+    position: absolute; bottom: 12px; padding: 4px 10px;
+    background: rgba(28, 43, 45, 0.78); color: #fff; font-size: 13px; font-weight: 500; border-radius: 3px;
+    display: none; pointer-events: none;
+  }
+  .tag.left { left: 12px; }
+  .tag.right { right: 12px; }
+  .stage.compare .tag { display: block; }
+
+  .stage.busy::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
+    background-size: 250% 100%;
+    animation: sweep 1.6s ease-in-out infinite;
+  }
+  .stage.busy { filter: saturate(0.7); }
+  @keyframes sweep { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  @media (prefers-reduced-motion: reduce) { .stage.busy::after { animation: none; background: rgba(255, 255, 255, 0.35); } }
+
+  /* Controls */
+  form { display: grid; gap: 24px; align-content: start; }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+  legend, .field label { font: 600 15px/1.3 var(--body); margin-bottom: 10px; padding: 0; display: block; }
+
+  .styles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .chip { position: relative; }
+  .chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .chip input + span {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; min-height: 48px;
+    border: 1px solid var(--line); border-radius: 4px; background: transparent;
+    font-weight: 500;
+  }
+  .chip input:checked + span { border-color: var(--ink); background: var(--paper); box-shadow: inset 0 0 0 1px var(--ink); }
+  .chip input:focus-visible + span { outline: 3px solid var(--brass); outline-offset: 2px; }
+  .chip:hover input + span { border-color: var(--teal); }
+  .dots { display: inline-flex; flex: none; }
+  .dots i { width: 14px; height: 14px; border-radius: 50%; margin-left: -4px; box-shadow: 0 0 0 1.5px var(--limewash); }
+  .dots i:first-child { margin-left: 0; }
+  .chip input:checked + span .dots i { box-shadow: 0 0 0 1.5px var(--paper); }
+
+  select, input[type="password"] {
+    width: 100%; min-height: 48px; padding: 10px 12px;
+    font: 400 16px var(--body); color: var(--ink);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+  }
+  select:focus-visible, input[type="password"]:focus-visible, button:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+
+  button {
+    min-height: 50px; padding: 12px 20px;
+    font: 600 16px var(--body); border-radius: 4px; cursor: pointer;
+  }
+  .primary { background: var(--teal); color: #fff; border: 0; }
+  .primary:hover:not(:disabled) { background: var(--teal-dark); }
+  .primary:disabled { background: #9DB0AE; cursor: not-allowed; }
+  .secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+  .secondary:hover { background: var(--paper); }
+  .actions { display: grid; gap: 10px; }
+  .actions[hidden], .field[hidden] { display: none; }
+
+  .status { margin: 0; min-height: 1.5em; color: var(--muted); font-size: 15px; }
+  .status.error { color: var(--danger); font-weight: 500; }
+
+  footer { margin-top: 28px; color: var(--muted); font-size: 13px; max-width: 60ch; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 class="brand">RoomRevive</h1>
+    <p class="tagline">Upload a room photo, pick a style, and compare the redesign side by side.</p>
+  </header>
+
+  <main class="layout">
+    <section class="stage-wrap" aria-label="Photo">
+      <div class="stage" id="stage">
+        <label class="drop" id="drop">
+          <svg viewBox="0 0 88 88" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 76V14h68v62"/>
+            <path d="M10 60h68"/>
+            <rect x="24" y="24" width="20" height="24" rx="1"/>
+            <path d="M34 24v24M24 36h20"/>
+            <path d="M52 60V46a6 6 0 0 1 6-6h8a6 6 0 0 1 6 6v14"/>
+          </svg>
+          <strong>Drop a room photo here</strong>
+          <span>or tap to choose one (JPG, PNG or WebP)</span>
+          <input class="visually-hidden" type="file" id="file" accept="image/*">
+        </label>
+        <img id="before" alt="Original room photo">
+        <img id="after" alt="Redesigned room">
+        <input class="slider" id="slider" type="range" min="0" max="100" value="50" aria-label="Compare original and redesigned room">
+        <div class="handle" aria-hidden="true"></div>
+        <span class="tag left">Before</span>
+        <span class="tag right">After</span>
+      </div>
+    </section>
+
+    <form class="controls" id="form" novalidate>
+      <fieldset>
+        <legend>Style</legend>
+        <div class="styles">
+          <label class="chip"><input type="radio" name="style" value="modern" checked><span><span class="dots"><i style="background:#2B2F36"></i><i style="background:#D9D9D6"></i><i style="background:#4F7CAC"></i></span>Modern</span></label>
+          <label class="chip"><input type="radio" name="style" value="scandinavian"><span><span class="dots"><i style="background:#EFEBE2"></i><i style="background:#C8A882"></i><i style="background:#8FA9A0"></i></span>Scandinavian</span></label>
+          <label class="chip"><input type="radio" name="style" value="industrial"><span><span class="dots"><i style="background:#3A3A3C"></i><i style="background:#8A5A3B"></i><i style="background:#9EA3A6"></i></span>Industrial</span></label>
+          <label class="chip"><input type="radio" name="style" value="bohemian"><span><span class="dots"><i style="background:#B5533C"></i><i style="background:#D9A441"></i><i style="background:#5E7F5B"></i></span>Bohemian</span></label>
+          <label class="chip"><input type="radio" name="style" value="minimalist"><span><span class="dots"><i style="background:#F4F4F2"></i><i style="background:#BDBDB8"></i><i style="background:#1F1F1F"></i></span>Minimalist</span></label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="room">Room</label>
+        <select id="room" name="room">
+          <option value="living">Living room</option>
+          <option value="bedroom">Bedroom</option>
+          <option value="kitchen">Kitchen</option>
+          <option value="bathroom">Bathroom</option>
+          <option value="office">Home office</option>
+        </select>
+      </div>
+
+      <div class="field" id="codeField" hidden>
+        <label for="code">Access code</label>
+        <input id="code" type="password" autocomplete="off">
+      </div>
+
+      <button class="primary" type="submit" id="go" disabled>Redesign room</button>
+      <p class="status" id="status" role="status" aria-live="polite">Add a photo of the room to begin.</p>
+
+      <div class="actions" id="afterBar" hidden>
+        <button class="secondary" type="button" id="download">Download image</button>
+        <button class="secondary" type="button" id="another">Choose another photo</button>
+      </div>
+    </form>
+  </main>
+
+  <footer>Designs are AI-generated concepts. Furniture and finishes shown are illustrative, not exact products.</footer>
+</div>
+
+<script>
+(() => {
+  const MAX_SIDE = 1280;
+  const $ = (s) => document.querySelector(s);
+  const stage = $('#stage'), drop = $('#drop'), fileInput = $('#file');
+  const before = $('#before'), after = $('#after'), slider = $('#slider');
+  const form = $('#form'), go = $('#go'), statusEl = $('#status');
+  const codeField = $('#codeField'), code = $('#code'), room = $('#room');
+  const afterBar = $('#afterBar'), downloadBtn = $('#download'), anotherBtn = $('#another');
+
+  let original = null, result = null, busy = false;
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  code.value = store.get('roomrevive_code') || '';
+
+  function say(text, isError) {
+    statusEl.textContent = text;
+    statusEl.classList.toggle('error', !!isError);
+  }
+
+  function setPos(pct) {
+    const p = Math.max(0, Math.min(100, pct));
+    stage.style.setProperty('--pos', p + '%');
+    slider.value = p;
+  }
+
+  function setBusy(on) {
+    busy = on;
+    stage.classList.toggle('busy', on);
+    go.disabled = on || !original;
+    go.textContent = on ? 'Redesigning\u2026' : (result ? 'Redesign again' : 'Redesign room');
+  }
+
+  function loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+      img.src = url;
+    });
+  }
+
+  function shrink(img) {
+    const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.round(img.naturalWidth * scale);
+    const h = Math.round(img.naturalHeight * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    return { dataUrl: canvas.toDataURL('image/jpeg', 0.85), w, h };
+  }
+
+  async function handleFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      say('Choose an image file (JPG, PNG or WebP).', true);
+      return;
+    }
+    try {
+      const img = await loadImage(file);
+      const { dataUrl, w, h } = shrink(img);
+      original = dataUrl;
+      result = null;
+      before.src = dataUrl;
+      after.removeAttribute('src');
+      stage.style.setProperty('--ratio', w + ' / ' + h);
+      stage.classList.add('has-photo');
+      stage.classList.remove('compare');
+      afterBar.hidden = true;
+      setPos(50);
+      setBusy(false);
+      say('Photo ready. Pick a style and press Redesign room.');
+    } catch (e) {
+      say("That photo couldn't be opened. Try a JPG or PNG.", true);
+    }
+  }
+
+  function reset() {
+    original = null; result = null;
+    fileInput.value = '';
+    stage.classList.remove('has-photo', 'compare');
+    stage.style.removeProperty('--ratio');
+    afterBar.hidden = true;
+    setBusy(false);
+    say('Add a photo of the room to begin.');
+  }
+
+  fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
+
+  // Comparison slider: the range input handles keyboard and touch; pointer events let you grab anywhere.
+  slider.addEventListener('input', () => setPos(Number(slider.value)));
+  let dragging = false;
+  function moveFromPointer(e) {
+    const r = stage.getBoundingClientRect();
+    setPos(((e.clientX - r.left) / r.width) * 100);
+  }
+  stage.addEventListener('pointerdown', (e) => {
+    if (!stage.classList.contains('compare')) return;
+    dragging = true;
+    moveFromPointer(e);
+  });
+  window.addEventListener('pointermove', (e) => { if (dragging) moveFromPointer(e); });
+  window.addEventListener('pointerup', () => { dragging = false; });
+
+  function showResult(dataUrl) {
+    result = dataUrl;
+    after.src = dataUrl;
+    stage.classList.add('compare');
+    afterBar.hidden = false;
+    setPos(50);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!original || busy) return;
+    setBusy(true);
+    say('Redesigning\u2026 this usually takes 15 to 40 seconds.');
+    try {
+      const res = await fetch('/api/redesign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-access-code': code.value.trim() },
+        body: JSON.stringify({ image: original, style: form.elements.style.value, room: room.value })
+      });
+      let data = {};
+      try { data = await res.json(); } catch (err) {}
+
+      if (res.status === 401) {
+        codeField.hidden = false;
+        code.focus();
+        say('Enter the access code you were given, then press Redesign room again.', true);
+        return;
+      }
+      if (!res.ok || !data.image) {
+        say(data.error || 'Something went wrong. Please try again.', true);
+        return;
+      }
+      store.set('roomrevive_code', code.value.trim());
+      showResult(data.image);
+      say('Done. Drag the handle to compare before and after.');
+    } catch (err) {
+      say('Could not reach the server. Check your connection and try again.', true);
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!result) return;
+    const ext = (result.match(/^data:image\/(\w+)/) || [])[1] || 'png';
+    const a = document.createElement('a');
+    a.href = result;
+    a.download = 'roomrevive-design.' + (ext === 'jpeg' ? 'jpg' : ext);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  anotherBtn.addEventListener('click', reset);
+})();
+</script>
+</body>
+</html>

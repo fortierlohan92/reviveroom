@@ -1,0 +1,7 @@
+{
+  "name": "roomrevive",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI interior redesign from a room photo",
+  "engines": { "node": ">=18" }
+}

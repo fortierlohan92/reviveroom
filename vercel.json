@@ -1,0 +1,5 @@
+{
+  "functions": {
+    "api/redesign.js": { "maxDuration": 60 }
+  }
+}
