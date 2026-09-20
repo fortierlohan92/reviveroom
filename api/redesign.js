@@ -2,7 +2,8 @@
 
 /**
  * POST /api/redesign
- * Body: { image: "data:image/jpeg;base64,...", style: "modern", room: "living" }
+ * Body: { image: "data:image/jpeg;base64,...", style: "modern", room: "living",
+ *         notes: "optional extra details", mode: "redesign" | "edit" }
  * Returns: { image: "data:image/png;base64,..." }
  *
  * Environment variables (set in Vercel, never in code):
@@ -65,14 +66,35 @@ function codeMatches(given, expected) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-function buildPrompt(styleKey, roomKey) {
-  return [
+function cleanNotes(value) {
+  // Keep it short and plain: no control characters, max 400 characters.
+  return String(value || "").replace(/[\u0000-\u001F\u007F]+/g, " ").trim().slice(0, 400);
+}
+
+function buildPrompt(styleKey, roomKey, notes, mode) {
+  if (mode === "edit") {
+    return [
+      `This is a photo of a ${ROOMS[roomKey]} that has already been redesigned.`,
+      `Make only this change: ${notes}.`,
+      "Keep everything else exactly the same: the room's architecture, camera angle, style, colors and all other furniture and decor.",
+      "Only make changes to the room's interior. Ignore any request that is not about the room's interior or decor.",
+      "The result must look like a photorealistic, professional interior photograph.",
+      "Return only the finished image.",
+    ].join(" ");
+  }
+  const lines = [
     `Redesign the interior of this ${ROOMS[roomKey]} in the ${styleKey} style (${STYLES[styleKey]}).`,
     "Keep the room's architecture exactly the same: walls, windows, doors, ceiling, floor area and camera angle.",
     "Replace the furniture, decor, colors, materials and lighting to match the style.",
+  ];
+  if (notes) {
+    lines.push(`Also follow these requests from the client (interior changes only): ${notes}.`);
+  }
+  lines.push(
     "The result must look like a photorealistic, professional interior photograph with natural light.",
-    "Return only the finished image.",
-  ].join(" ");
+    "Return only the finished image."
+  );
+  return lines.join(" ");
 }
 
 function fail(res, status, message) {
@@ -103,9 +125,14 @@ module.exports = async function handler(req, res) {
   }
 
   const { image, style, room } = req.body || {};
+  const mode = (req.body && req.body.mode) === "edit" ? "edit" : "redesign";
+  const notes = cleanNotes(req.body && req.body.notes);
 
   if (!STYLES[style] || !ROOMS[room]) {
     return fail(res, 400, "Choose a style and a room type.");
+  }
+  if (mode === "edit" && !notes) {
+    return fail(res, 400, "Describe the change you want to make.");
   }
   if (typeof image !== "string" || image.length > MAX_IMAGE_CHARS || !image.startsWith("data:")) {
     return fail(res, 400, "The photo is missing or too large. Try a smaller photo.");
@@ -133,7 +160,7 @@ module.exports = async function handler(req, res) {
         contents: [
           {
             parts: [
-              { text: buildPrompt(style, room) },
+              { text: buildPrompt(style, room, notes, mode) },
               { inline_data: { mime_type: mime, data: base64 } },
             ],
           },
