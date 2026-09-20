@@ -1,40 +1,148 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="modern">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#EEF0F3">
 <title>RoomRevive: redesign any room from a photo</title>
 <meta name="description" content="Upload a room photo, pick a style, and compare the AI redesign side by side.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=Caprasimo&family=Hanken+Grotesk:wght@300;400;500;600&family=Jost:wght@400;500;600&family=Karla:wght@400;500;700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --limewash: #ECEFEA;
-    --paper: #F7F8F5;
-    --ink: #1C2B2D;
-    --muted: #566668;
-    --teal: #2C5F63;
-    --teal-dark: #224A4D;
-    --brass: #B4862F;
-    --line: #C9CFC8;
-    --danger: #8F2D2D;
-    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
-    --body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+    /* Modern is the default look. Other styles override these tokens below. */
+    --bg: #EEF0F3;
+    --panel: #FFFFFF;
+    --ink: #12151A;
+    --muted: #565E6B;
+    --line: #CDD2DA;
+    --accent: #2748E0;
+    --accent-hover: #1B36B8;
+    --accent-ink: #FFFFFF;
+    --focus: #2748E0;
+    --stage: #DDE1E8;
+    --danger: #B3261E;
+    --knob: #2748E0;
+    --knob-ink: #FFFFFF;
+    --display: "Manrope", "Helvetica Neue", Arial, sans-serif;
+    --body: "Manrope", "Helvetica Neue", Arial, sans-serif;
+    --body-size: 16px;
+    --brand-size: 30px;
+    --brand-weight: 800;
+    --brand-tracking: -0.03em;
+    --brand-transform: none;
+    --btn-font: "Manrope", "Helvetica Neue", Arial, sans-serif;
+    --btn-weight: 700;
+    --btn-size: 16px;
+    --btn-transform: none;
+    --btn-tracking: 0;
+    --field-radius: 4px;
+    --chip-radius: 4px;
+    --btn-radius: 4px;
+    --stage-radius: 4px;
+    --chip-border-w: 1px;
+    --chip-border-style: solid;
+    --stage-border: 0 solid transparent;
+    --band-h: 4px;
+    --band: var(--accent);
+    --pad: 20px;
+    --form-gap: 24px;
+    --scheme: light;
   }
+
+  /* Scandinavian: light oak, soft greys, rounded and calm */
+  html[data-theme="scandinavian"] {
+    --bg: #F0EFEB; --panel: #FBFBF9; --ink: #2A2D2C; --muted: #5B6462; --line: #D6D4CC;
+    --accent: #4F7268; --accent-hover: #405D54; --accent-ink: #FFFFFF; --focus: #8A6A3F;
+    --stage: #E2E0D9; --danger: #A3311F; --knob: #A67C4E; --knob-ink: #FFFFFF;
+    --display: "Jost", "Avenir Next", "Century Gothic", "Helvetica Neue", sans-serif;
+    --body: "Jost", "Avenir Next", "Century Gothic", "Helvetica Neue", sans-serif;
+    --btn-font: "Jost", "Avenir Next", "Century Gothic", "Helvetica Neue", sans-serif;
+    --body-size: 17px;
+    --brand-size: 34px; --brand-weight: 500; --brand-tracking: -0.01em;
+    --btn-weight: 500; --btn-size: 17px;
+    --field-radius: 12px; --chip-radius: 999px; --btn-radius: 999px; --stage-radius: 22px;
+    --band-h: 0px;
+  }
+
+  /* Industrial: charcoal steel, copper, hazard tape */
+  html[data-theme="industrial"] {
+    --bg: #1E1F20; --panel: #2A2C2D; --ink: #ECE9E2; --muted: #A9ABAA; --line: #4A4D4F;
+    --accent: #E07A35; --accent-hover: #F08B48; --accent-ink: #1A1B1C; --focus: #E0B320;
+    --stage: #2A2C2D; --danger: #FF8F7F; --knob: #E0B320; --knob-ink: #1A1B1C;
+    --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+    --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+    --btn-font: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+    --body-size: 17px;
+    --brand-size: 40px; --brand-weight: 700; --brand-tracking: 0.02em; --brand-transform: uppercase;
+    --btn-weight: 700; --btn-size: 20px; --btn-transform: uppercase; --btn-tracking: 0.04em;
+    --field-radius: 0; --chip-radius: 0; --btn-radius: 0; --stage-radius: 0;
+    --chip-border-w: 2px; --stage-border: 3px solid var(--line);
+    --band-h: 10px;
+    --band: repeating-linear-gradient(-45deg, #E0B320 0 12px, #1A1B1C 12px 24px);
+    --scheme: dark;
+  }
+
+  /* Bohemian: sand, terracotta, woven band, arched window */
+  html[data-theme="bohemian"] {
+    --bg: #F1E4D0; --panel: #FAF1E2; --ink: #3B2A22; --muted: #6B5548; --line: #D3B892;
+    --accent: #A94A33; --accent-hover: #8A3A27; --accent-ink: #FFF8EE; --focus: #4C6B49;
+    --stage: #E4D2B6; --danger: #9B2C1F; --knob: #D9A441; --knob-ink: #3B2A22;
+    --display: "Caprasimo", Georgia, "Times New Roman", serif;
+    --body: "Karla", "Helvetica Neue", Arial, sans-serif;
+    --btn-font: "Karla", "Helvetica Neue", Arial, sans-serif;
+    --body-size: 17px;
+    --brand-size: 36px; --brand-weight: 400; --brand-tracking: 0;
+    --btn-weight: 700; --btn-size: 17px;
+    --field-radius: 12px; --chip-radius: 14px; --btn-radius: 999px;
+    --stage-radius: clamp(60px, 20vw, 190px) clamp(60px, 20vw, 190px) 10px 10px;
+    --chip-border-w: 1.5px; --chip-border-style: dashed;
+    --band-h: 12px;
+    --band: repeating-linear-gradient(90deg, #A94A33 0 28px, #D9A441 28px 44px, #5E7F5B 44px 72px, #F1E4D0 72px 80px);
+  }
+
+  /* Minimalist: white space, hairlines, light type, black accent */
+  html[data-theme="minimalist"] {
+    --bg: #F8F8F6; --panel: #FFFFFF; --ink: #161616; --muted: #5F5F5C; --line: #DCDCD8;
+    --accent: #161616; --accent-hover: #000000; --accent-ink: #FFFFFF; --focus: #161616;
+    --stage: #ECECE9; --danger: #A61B1B; --knob: #161616; --knob-ink: #FFFFFF;
+    --display: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+    --body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+    --btn-font: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+    --brand-size: 40px; --brand-weight: 300; --brand-tracking: -0.035em;
+    --btn-weight: 500;
+    --field-radius: 0; --chip-radius: 0; --btn-radius: 0; --stage-radius: 0;
+    --band-h: 1px; --band: var(--line);
+    --pad: 28px; --form-gap: 32px;
+  }
+
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
+  html { -webkit-text-size-adjust: 100%; color-scheme: var(--scheme); background: var(--bg); }
   body {
     margin: 0;
-    background: var(--limewash);
+    background: var(--bg);
     color: var(--ink);
-    font: 400 16px/1.5 var(--body);
+    font: 400 var(--body-size)/1.5 var(--body);
   }
-  .app { max-width: 1180px; margin: 0 auto; padding: 20px 20px 40px; }
 
-  header { padding: 4px 0 20px; }
-  .brand { font: 700 28px/1.1 var(--display); letter-spacing: -0.02em; margin: 0; }
-  .tagline { margin: 6px 0 0; color: var(--muted); max-width: 46ch; }
+  /* Smooth restyle when the style changes */
+  body, .stage, .drop, .chip input + span, .primary, .secondary, select, textarea, input[type="password"], .band {
+    transition: background-color .35s ease, color .35s ease, border-color .35s ease, border-radius .35s ease;
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  .band { height: var(--band-h); background: var(--band); }
+  .app { max-width: 1180px; margin: 0 auto; padding: var(--pad) var(--pad) 40px; }
+
+  header { padding: 8px 0 24px; }
+  .brand {
+    font: var(--brand-weight) var(--brand-size)/1.05 var(--display);
+    letter-spacing: var(--brand-tracking);
+    text-transform: var(--brand-transform);
+    margin: 0;
+  }
+  .tagline { margin: 8px 0 0; color: var(--muted); max-width: 46ch; }
 
   .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
   @media (min-width: 900px) {
@@ -49,8 +157,9 @@
     width: 100%;
     aspect-ratio: var(--ratio, 4 / 3);
     max-height: 78vh;
-    background: #DDE2DB;
-    border-radius: 4px;
+    background: var(--stage);
+    border: var(--stage-border);
+    border-radius: var(--stage-radius);
     overflow: hidden;
     touch-action: pan-y;
     --pos: 50%;
@@ -70,13 +179,16 @@
     display: grid; place-content: center; justify-items: center; gap: 10px;
     padding: 24px; text-align: center; cursor: pointer;
     border: 1.5px solid var(--line);
-    border-radius: 4px;
+    border-radius: inherit;
     color: var(--ink);
   }
-  .drop:hover, .drop.over { background: rgba(255, 255, 255, 0.45); border-color: var(--teal); }
-  .drop:focus-within { outline: 3px solid var(--brass); outline-offset: -3px; }
-  .drop svg { width: 88px; height: 88px; stroke: var(--teal); }
-  .drop strong { font: 500 22px/1.2 var(--display); }
+  .drop:hover, .drop.over { background: var(--panel); border-color: var(--accent); }
+  .drop:focus-within { outline: 3px solid var(--focus); outline-offset: -3px; }
+  .drop svg { width: 88px; height: 88px; stroke: var(--accent); }
+  .drop strong { font: var(--brand-weight) 24px/1.2 var(--display); letter-spacing: var(--brand-tracking); font-weight: 500; }
+  html[data-theme="bohemian"] .drop strong { font-weight: 400; }
+  html[data-theme="industrial"] .drop strong { text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em; font-size: 28px; }
+  html[data-theme="minimalist"] .drop strong { font-weight: 300; font-size: 26px; }
   .drop span { color: var(--muted); font-size: 14px; }
   .stage.has-photo .drop { display: none; }
   .visually-hidden {
@@ -85,89 +197,106 @@
   }
 
   .slider { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; display: none; }
-  .handle { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: #fff; display: none; pointer-events: none; box-shadow: 0 0 0 1px rgba(28, 43, 45, 0.25); }
+  .handle { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 2px; margin-left: -1px; background: #fff; display: none; pointer-events: none; box-shadow: 0 0 0 1px rgba(20, 20, 20, 0.3); }
   .handle::after {
     content: "\2194";
     position: absolute; top: 50%; left: 50%;
     width: 44px; height: 44px; margin: -22px 0 0 -22px;
     display: grid; place-items: center;
-    background: var(--brass); color: #fff; font-size: 20px; border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(28, 43, 45, 0.35);
+    background: var(--knob); color: var(--knob-ink); font-size: 20px; border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(20, 20, 20, 0.4);
   }
+  html[data-theme="industrial"] .handle::after { border-radius: 0; }
+  html[data-theme="minimalist"] .handle::after { border-radius: 0; }
   .slider:focus-visible + .handle::after { outline: 3px solid var(--ink); outline-offset: 3px; }
   .stage.compare .slider, .stage.compare .handle { display: block; }
 
   .tag {
-    position: absolute; bottom: 12px; padding: 4px 10px;
-    background: rgba(28, 43, 45, 0.78); color: #fff; font-size: 13px; font-weight: 500; border-radius: 3px;
+    position: absolute; bottom: 14px; padding: 4px 10px;
+    background: rgba(20, 20, 20, 0.78); color: #fff; font-size: 13px; font-weight: 500; border-radius: 3px;
     display: none; pointer-events: none;
   }
-  .tag.left { left: 12px; }
-  .tag.right { right: 12px; }
+  .tag.left { left: 14px; }
+  .tag.right { right: 14px; }
   .stage.compare .tag { display: block; }
+  html[data-theme="bohemian"] .tag { bottom: 16px; }
+  html[data-theme="bohemian"] .tag.left { left: 26px; }
+  html[data-theme="bohemian"] .tag.right { right: 26px; }
 
   .stage.busy::after {
     content: "";
     position: absolute; inset: 0;
-    background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
+    background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.5) 50%, transparent 65%);
     background-size: 250% 100%;
     animation: sweep 1.6s ease-in-out infinite;
   }
   .stage.busy { filter: saturate(0.7); }
   @keyframes sweep { from { background-position: 150% 0; } to { background-position: -50% 0; } }
-  @media (prefers-reduced-motion: reduce) { .stage.busy::after { animation: none; background: rgba(255, 255, 255, 0.35); } }
+  @media (prefers-reduced-motion: reduce) { .stage.busy::after { animation: none; background: rgba(255, 255, 255, 0.3); } }
 
   /* Controls */
-  form { display: grid; gap: 24px; align-content: start; }
+  form { display: grid; gap: var(--form-gap); align-content: start; }
   fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
   legend, .field label { font: 600 15px/1.3 var(--body); margin-bottom: 10px; padding: 0; display: block; }
+  html[data-theme="industrial"] legend, html[data-theme="industrial"] .field label { font-size: 17px; }
 
   .styles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .chip { position: relative; }
+  .chip { position: relative; min-width: 0; }
   .chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
   .chip input + span {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 12px; min-height: 48px;
-    border: 1px solid var(--line); border-radius: 4px; background: transparent;
+    border: var(--chip-border-w) var(--chip-border-style) var(--line);
+    border-radius: var(--chip-radius);
+    background: transparent;
     font-weight: 500;
   }
-  .chip input:checked + span { border-color: var(--ink); background: var(--paper); box-shadow: inset 0 0 0 1px var(--ink); }
-  .chip input:focus-visible + span { outline: 3px solid var(--brass); outline-offset: 2px; }
-  .chip:hover input + span { border-color: var(--teal); }
+  .chip input:checked + span { border-color: var(--accent); border-style: solid; background: var(--panel); box-shadow: inset 0 0 0 1px var(--accent); }
+  .chip input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .chip:hover input + span { border-color: var(--accent); }
+  html[data-theme="scandinavian"] .chip input + span { padding-left: 16px; }
+  html[data-theme="industrial"] .chip input + span { text-transform: uppercase; font-family: var(--display); font-weight: 600; font-size: 16px; letter-spacing: 0.01em; padding-left: 10px; padding-right: 8px; gap: 8px; }
   .dots { display: inline-flex; flex: none; }
-  .dots i { width: 14px; height: 14px; border-radius: 50%; margin-left: -4px; box-shadow: 0 0 0 1.5px var(--limewash); }
+  .dots i { width: 14px; height: 14px; border-radius: 50%; margin-left: -4px; box-shadow: 0 0 0 1.5px var(--bg); }
   .dots i:first-child { margin-left: 0; }
-  .chip input:checked + span .dots i { box-shadow: 0 0 0 1.5px var(--paper); }
+  .chip input:checked + span .dots i { box-shadow: 0 0 0 1.5px var(--panel); }
+  html[data-theme="industrial"] .dots i, html[data-theme="minimalist"] .dots i { border-radius: 0; }
+
+  .style-note { margin: 12px 0 0; color: var(--muted); font-size: 15px; min-height: 1.5em; }
 
   textarea, select, input[type="password"] {
     width: 100%; min-height: 48px; padding: 10px 12px;
     font: 400 16px var(--body); color: var(--ink);
-    background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--field-radius);
   }
   textarea { min-height: 96px; resize: vertical; line-height: 1.4; }
-  textarea:focus-visible, select:focus-visible, input[type="password"]:focus-visible, button:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+  textarea:focus-visible, select:focus-visible, input[type="password"]:focus-visible, button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
   button {
-    min-height: 50px; padding: 12px 20px;
-    font: 600 16px var(--body); border-radius: 4px; cursor: pointer;
+    min-height: 52px; padding: 12px 22px;
+    font: var(--btn-weight) var(--btn-size)/1 var(--btn-font);
+    text-transform: var(--btn-transform);
+    letter-spacing: var(--btn-tracking);
+    border-radius: var(--btn-radius); cursor: pointer;
   }
-  .primary { background: var(--teal); color: #fff; border: 0; }
-  .primary:hover:not(:disabled) { background: var(--teal-dark); }
-  .primary:disabled { background: #9DB0AE; cursor: not-allowed; }
+  .primary { background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); }
+  .primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .primary:disabled { opacity: 0.4; cursor: not-allowed; }
   .secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
-  .secondary:hover { background: var(--paper); }
+  .secondary:hover { background: var(--panel); }
   .actions { display: grid; gap: 10px; }
   .actions[hidden], .field[hidden], .actions button[hidden] { display: none; }
 
   .hint { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
   .hint[hidden] { display: none; }
   .status { margin: 0; min-height: 1.5em; color: var(--muted); font-size: 15px; }
-  .status.error { color: var(--danger); font-weight: 500; }
+  .status.error { color: var(--danger); font-weight: 600; }
 
-  footer { margin-top: 28px; color: var(--muted); font-size: 13px; max-width: 60ch; }
+  footer { margin-top: 32px; color: var(--muted); font-size: 13px; max-width: 60ch; }
 </style>
 </head>
 <body>
+<div class="band" aria-hidden="true"></div>
 <div class="app">
   <header>
     <h1 class="brand">RoomRevive</h1>
@@ -208,6 +337,7 @@
           <label class="chip"><input type="radio" name="style" value="bohemian"><span><span class="dots"><i style="background:#B5533C"></i><i style="background:#D9A441"></i><i style="background:#5E7F5B"></i></span>Bohemian</span></label>
           <label class="chip"><input type="radio" name="style" value="minimalist"><span><span class="dots"><i style="background:#F4F4F2"></i><i style="background:#BDBDB8"></i><i style="background:#1F1F1F"></i></span>Minimalist</span></label>
         </div>
+        <p class="style-note" id="styleNote"></p>
       </fieldset>
 
       <div class="field">
@@ -460,6 +590,37 @@
   });
 
   anotherBtn.addEventListener('click', reset);
+
+  // ---- Style-based look: the whole app restyles to match the chosen interior style ----
+  const THEMES = {
+    modern:       { note: 'Clean lines, a neutral base and one bold accent.', color: '#EEF0F3' },
+    scandinavian: { note: 'Light wood, soft greys and cozy textures.',        color: '#F0EFEB' },
+    industrial:   { note: 'Exposed brick, black steel and warm filament light.', color: '#1E1F20' },
+    bohemian:     { note: 'Layered textiles, earthy colors and lots of plants.', color: '#F1E4D0' },
+    minimalist:   { note: 'Few pieces, a calm palette and clear surfaces.',   color: '#F8F8F6' }
+  };
+  const styleNote = $('#styleNote');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+
+  function applyTheme(name) {
+    const t = THEMES[name] || THEMES.modern;
+    document.documentElement.dataset.theme = THEMES[name] ? name : 'modern';
+    styleNote.textContent = t.note;
+    if (themeMeta) themeMeta.setAttribute('content', t.color);
+  }
+
+  const savedStyle = store.get('roomrevive_style');
+  if (savedStyle && THEMES[savedStyle]) {
+    const radio = form.querySelector('input[name="style"][value="' + savedStyle + '"]');
+    if (radio) radio.checked = true;
+  }
+  applyTheme(form.elements.style.value);
+  form.addEventListener('change', (e) => {
+    if (e.target && e.target.name === 'style') {
+      applyTheme(e.target.value);
+      store.set('roomrevive_style', e.target.value);
+    }
+  });
 })();
 </script>
 </body>
